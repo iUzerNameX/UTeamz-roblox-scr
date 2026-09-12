@@ -1,5 +1,5 @@
--- [[ UTeamz Mobile Script | CTS ]] --
-print("UTeamz | t.me/UTeamz")
+-- [[ CTSuteamz Mobile Script | UTeamz ]] --
+print("CTSuteamz | t.me/UTeamz")
 
 local Services = {
     RunService = game:GetService("RunService"),
@@ -7,8 +7,7 @@ local Services = {
     Players = game:GetService("Players"),
     CoreGui = game:GetService("CoreGui"),
     Workspace = game:GetService("Workspace"),
-    Lighting = game:GetService("Lighting"),
-    HttpService = game:GetService("HttpService")
+    Lighting = game:GetService("Lighting")
 }
 
 local LocalPlayer = Services.Players.LocalPlayer
@@ -50,9 +49,17 @@ local Timers = {
 local Fly = {
     Active = false,
     Speed = 70,
-    Root = nil,
-    MoveUp = false,
-    MoveDown = false
+    Root = nil
+}
+
+-- Ð¡Ð¾ÑÑ‚Ð¾ÑÐ½Ð¸Ðµ Ð¼Ð¾Ð±Ð¸Ð»ÑŒÐ½Ñ‹Ñ… ÐºÐ½Ð¾Ð¿Ð¾Ðº Ð¿Ð¾Ð»ÐµÑ‚Ð°
+local FlyInput = {
+    Forward = false,
+    Backward = false,
+    Left = false,
+    Right = false,
+    Up = false,
+    Down = false
 }
 
 local Other = {
@@ -73,84 +80,18 @@ local PenView = {
     }
 }
 
----------------------------------------------------------
--- CONFIG SYSTEM (CTSUteamz)
----------------------------------------------------------
-local ConfigFileName = "CTSUteamz.json"
+-- Ð“Ð»Ð¾Ð±Ð°Ð»ÑŒÐ½Ð°Ñ Ð¿ÐµÑ€ÐµÐ¼ÐµÐ½Ð½Ð°Ñ Ð´Ð»Ñ UI Ð´Ð¶Ð¾Ð¹ÑÑ‚Ð¸ÐºÐ°
+local FlyUIFrame = nil
 
-local function SaveConfig()
-    local data = {
-        ESP = {
-            Enabled = ESP.Enabled,
-            TeamCheck = ESP.TeamCheck,
-            ShowDistance = ESP.ShowDistance,
-            EnableFill = ESP.EnableFill,
-            EnableOutline = ESP.EnableOutline
-        },
-        Mark = {
-            Enabled = Mark.Enabled,
-            Distance = Mark.Distance,
-            OffsetY = Mark.OffsetY,
-            Size = Mark.Size
-        },
-        Fly = {
-            Speed = Fly.Speed
-        },
-        Other = {
-            RemoveFog = Other.RemoveFog,
-            PenView = Other.PenView
-        }
-    }
-    if writefile then
-        pcall(function()
-            writefile(ConfigFileName, Services.HttpService:JSONEncode(data))
-        end)
-    end
-end
-
-local function LoadConfig()
-    if readfile and isfile and isfile(ConfigFileName) then
-        local success, result = pcall(function()
-            return Services.HttpService:JSONDecode(readfile(ConfigFileName))
-        end)
-        if success and type(result) == "table" then
-            if result.ESP then
-                if result.ESP.Enabled ~= nil then ESP.Enabled = result.ESP.Enabled end
-                if result.ESP.TeamCheck ~= nil then ESP.TeamCheck = result.ESP.TeamCheck end
-                if result.ESP.ShowDistance ~= nil then ESP.ShowDistance = result.ESP.ShowDistance end
-                if result.ESP.EnableFill ~= nil then ESP.EnableFill = result.ESP.EnableFill end
-                if result.ESP.EnableOutline ~= nil then ESP.EnableOutline = result.ESP.EnableOutline end
-            end
-            if result.Mark then
-                if result.Mark.Enabled ~= nil then Mark.Enabled = result.Mark.Enabled end
-                if result.Mark.Distance ~= nil then Mark.Distance = result.Mark.Distance end
-                if result.Mark.OffsetY ~= nil then Mark.OffsetY = result.Mark.OffsetY end
-                if result.Mark.Size ~= nil then Mark.Size = result.Mark.Size end
-            end
-            if result.Fly then
-                if result.Fly.Speed ~= nil then Fly.Speed = result.Fly.Speed end
-            end
-            if result.Other then
-                if result.Other.RemoveFog ~= nil then Other.RemoveFog = result.Other.RemoveFog end
-                if result.Other.PenView ~= nil then Other.PenView = result.Other.PenView end
-            end
-            return true
-        end
-    end
-    return false
-end
-
--- ÐŸÑ€Ð¾Ð±ÑƒÐµÐ¼ Ð·Ð°Ð³Ñ€ÑƒÐ·Ð¸Ñ‚ÑŒ ÐºÐ¾Ð½Ñ„Ð¸Ð³ Ð¿Ñ€Ð¸ Ð·Ð°Ð¿ÑƒÑÐºÐµ
-LoadConfig()
 ---------------------------------------------------------
 -- FOLDERS & CONTAINERS
 ---------------------------------------------------------
 local ESPFolder = Instance.new("Folder")
-ESPFolder.Name = "UTeamz_ESP"
+ESPFolder.Name = "CTSuteamz_ESP"
 ESPFolder.Parent = Services.CoreGui
 
 local MarkScreenGui = Instance.new("ScreenGui")
-MarkScreenGui.Name = "UTeamz_Marks"
+MarkScreenGui.Name = "CTSuteamz_Marks"
 MarkScreenGui.ResetOnSpawn = false
 MarkScreenGui.Parent = Services.CoreGui
 
@@ -204,7 +145,6 @@ local function PenView_GetPenetration()
     end
     return 200
 end
-
 local function PenView_FindGunBrick(chassis)
     local gun = chassis:FindFirstChild("Gun", true)
     if not gun then return nil end
@@ -270,6 +210,7 @@ local function PenView_UpdateViewport(ui, part, thickness, pen)
     end
     mesh.Color = color
 end
+
 local function PenView_StartHeartbeat(ui)
     if PenView.HeartbeatConnection then PenView.HeartbeatConnection:Disconnect() end
     PenView.LastPart = nil
@@ -330,16 +271,15 @@ local function TogglePenView(state)
         PenView.UI = nil
     end
 end
-
 ---------------------------------------------------------
--- TANK FLY SYSTEM
+-- TANK FLY SYSTEM (ADAPTED FOR MOBILE)
 ---------------------------------------------------------
 local bv = Instance.new("BodyVelocity")
-bv.Name = "UTeamzFlyVelocity"
+bv.Name = "CTSuteamzFlyVelocity"
 bv.MaxForce = Vector3.new(500000, 500000, 500000)
 
 local bg = Instance.new("BodyGyro")
-bg.Name = "UTeamzFlyGyro"
+bg.Name = "CTSuteamzFlyGyro"
 bg.MaxTorque = Vector3.new(500000, 500000, 500000)
 bg.D = 120
 
@@ -384,6 +324,7 @@ local function startFly()
         bv.Parent = Fly.Root
         bg.Parent = Fly.Root
     end
+    if FlyUIFrame then FlyUIFrame.Visible = true end -- ÐŸÐ¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÐ¼ Ð¼Ð¾Ð±Ð¸Ð»ÑŒÐ½Ñ‹Ðµ ÐºÐ½Ð¾Ð¿ÐºÐ¸ ÑƒÐ¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ñ
 end
 
 local function stopFly()
@@ -391,7 +332,12 @@ local function stopFly()
     Fly.Active = false
     bv.Parent = nil
     bg.Parent = nil
+    
+    -- Ð¡Ð±Ñ€Ð°ÑÑ‹Ð²Ð°ÐµÐ¼ Ð¸Ð½Ð¿ÑƒÑ‚Ñ‹
+    for k, v in pairs(FlyInput) do FlyInput[k] = false end
+    if FlyUIFrame then FlyUIFrame.Visible = false end -- Ð¡ÐºÑ€Ñ‹Ð²Ð°ÐµÐ¼ Ð¼Ð¾Ð±Ð¸Ð»ÑŒÐ½Ñ‹Ðµ ÐºÐ½Ð¾Ð¿ÐºÐ¸
 end
+
 ---------------------------------------------------------
 -- ESP & MARKERS
 ---------------------------------------------------------
@@ -434,8 +380,7 @@ end
 
 local function CreateESP(targetObject, color, isHull)
     if ESP.Instances[targetObject] then return ESP.Instances[targetObject] end
-    
-    local highlight = Instance.new("Highlight")
+	local highlight = Instance.new("Highlight")
     highlight.FillColor = ESP.EnableFill and color or Color3.new(0,0,0)
     highlight.FillTransparency = ESP.EnableFill and ESP.FillTransparency or 1
     highlight.OutlineColor = ESP.EnableOutline and color or Color3.new(0,0,0)
@@ -506,6 +451,7 @@ local function CreateESP(targetObject, color, isHull)
     }
     return ESP.Instances[targetObject]
 end
+
 local function ProcessChassis(chassis)
     if not chassis:IsA("Model") or not chassis.Name:match("^Chassis") then return end
     local playerName = chassis.Name:match("^Chassis(.+)$")
@@ -597,7 +543,6 @@ local function CleanupESP()
     end
     for _, obj in ipairs(toRemove) do ESP.Instances[obj] = nil end
 end
-
 ---------------------------------------------------------
 -- LOOPS & EVENTS
 ---------------------------------------------------------
@@ -627,19 +572,22 @@ Services.RunService.RenderStepped:Connect(function(dt)
     if Fly.Active and Fly.Root and Fly.Root.Parent then
         local cam = Services.Workspace.CurrentCamera
         local move = Vector3.zero
-        if Services.UserInput:IsKeyDown(Enum.KeyCode.W) then move += cam.CFrame.LookVector end
-        if Services.UserInput:IsKeyDown(Enum.KeyCode.S) then move -= cam.CFrame.LookVector end
-        if Services.UserInput:IsKeyDown(Enum.KeyCode.A) then move -= cam.CFrame.RightVector end
-        if Services.UserInput:IsKeyDown(Enum.KeyCode.D) then move += cam.CFrame.RightVector end
-        if Fly.MoveUp then move += Vector3.new(0,1,0) end
-        if Fly.MoveDown then move -= Vector3.new(0,1,0) end
+        
+        -- ÐšÐ¾Ð¼Ð±Ð¸Ð½Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ð¾Ðµ ÑƒÐ¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ (ÐšÐ»Ð°Ð²Ð¸Ð°Ñ‚ÑƒÑ€Ð° + ÐœÐ¾Ð±Ð¸Ð»ÑŒÐ½Ñ‹Ðµ ÐºÐ½Ð¾Ð¿ÐºÐ¸ UI)
+        if Services.UserInput:IsKeyDown(Enum.KeyCode.W) or FlyInput.Forward then move += cam.CFrame.LookVector end
+        if Services.UserInput:IsKeyDown(Enum.KeyCode.S) or FlyInput.Backward then move -= cam.CFrame.LookVector end
+        if Services.UserInput:IsKeyDown(Enum.KeyCode.A) or FlyInput.Left then move -= cam.CFrame.RightVector end
+        if Services.UserInput:IsKeyDown(Enum.KeyCode.D) or FlyInput.Right then move += cam.CFrame.RightVector end
+        if Services.UserInput:IsKeyDown(Enum.KeyCode.Space) or FlyInput.Up then move += Vector3.new(0,1,0) end
+        if Services.UserInput:IsKeyDown(Enum.KeyCode.LeftControl) or FlyInput.Down then move -= Vector3.new(0,1,0) end
         
         bv.Velocity = move.Magnitude > 0 and move.Unit * Fly.Speed or Vector3.zero
         bg.CFrame = cam.CFrame
     end
 end)
+
 ---------------------------------------------------------
--- ENHANCED GREEN MOBILE UI LIBRARY
+-- GREEN MOBILE UI LIBRARY & FLY D-PAD
 ---------------------------------------------------------
 local Library = {}
 Library.__index = Library
@@ -654,33 +602,86 @@ local themes = {
 
 function Library.new(title)
     for _, old in ipairs(Services.CoreGui:GetChildren()) do
-        if old.Name == "UTeamz_UI" then old:Destroy() end
+        if old.Name == "CTSuteamz_UI" then old:Destroy() end
     end
 
     local sg = Instance.new("ScreenGui")
-    sg.Name = "UTeamz_UI"
+    sg.Name = "CTSuteamz_UI"
     sg.ResetOnSpawn = false
     sg.Parent = Services.CoreGui
     
+    -- ====================================================
+    -- Ð¡ÐžÐ—Ð”ÐÐÐ˜Ð• D-PAD Ð”Ð›Ð¯ ÐŸÐžÐ›ÐÐ¢Ð (ÐœÐ¾Ð±Ð¸Ð»ÑŒÐ½Ð¾Ðµ ÑƒÐ¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ)
+    -- ====================================================
+    FlyUIFrame = Instance.new("Frame")
+    FlyUIFrame.Name = "FlyMobileControls"
+    FlyUIFrame.Size = UDim2.new(0, 180, 0, 180)
+    FlyUIFrame.Position = UDim2.new(1, -210, 1, -210) -- ÐŸÑ€Ð°Ð²Ñ‹Ð¹ Ð½Ð¸Ð¶Ð½Ð¸Ð¹ ÑƒÐ³Ð¾Ð»
+    FlyUIFrame.BackgroundTransparency = 1
+    FlyUIFrame.Visible = false
+    FlyUIFrame.Parent = sg
+
+    local function createFlyBtn(name, text, pos)
+        local btn = Instance.new("TextButton")
+        btn.Name = name
+        btn.Size = UDim2.new(0, 50, 0, 50)
+        btn.Position = pos
+        btn.BackgroundColor3 = themes.Background
+        btn.BorderColor3 = themes.Accent
+        btn.BorderSizePixel = 2
+        btn.Text = text
+        btn.TextColor3 = themes.Accent
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 18
+        btn.Parent = FlyUIFrame
+        
+        local cr = Instance.new("UICorner")
+        cr.CornerRadius = UDim.new(0, 8)
+        cr.Parent = btn
+
+        -- Ð›Ð¾Ð³Ð¸ÐºÐ° Ð½Ð°Ð¶Ð°Ñ‚Ð¸Ð¹ Ð´Ð»Ñ Ð¼Ð¾Ð±Ð¸Ð»Ð¾Ðº
+        btn.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+                FlyInput[name] = true
+                btn.BackgroundColor3 = themes.Accent
+                btn.TextColor3 = Color3.fromRGB(0,0,0)
+            end
+        end)
+        btn.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+                FlyInput[name] = false
+                btn.BackgroundColor3 = themes.Background
+                btn.TextColor3 = themes.Accent
+            end
+        end)
+    end
+
+    -- Ð Ð°ÑÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐ° ÐºÐ½Ð¾Ð¿Ð¾Ðº 3x3
+    createFlyBtn("Forward", "^", UDim2.new(0, 65, 0, 5))
+    createFlyBtn("Backward", "v", UDim2.new(0, 65, 0, 125))
+    createFlyBtn("Left", "<", UDim2.new(0, 5, 0, 65))
+    createFlyBtn("Right", ">", UDim2.new(0, 125, 0, 65))
+    createFlyBtn("Up", "UP", UDim2.new(0, 125, 0, 5))
+    createFlyBtn("Down", "DN", UDim2.new(0, 5, 0, 125))
+    -- ====================================================
+
     local main = Instance.new("Frame")
     main.Name = "Main"
-    main.Size = UDim2.new(0, 360, 0, 240)
-    main.Position = UDim2.new(0.5, -180, 0.5, -120)
+    main.Size = UDim2.new(0.85, 0, 0.75, 0)
+    main.Position = UDim2.new(0.075, 0, 0.125, 0)
     main.BackgroundColor3 = themes.Background
     main.BorderSizePixel = 0
     main.ClipsDescendants = true
     main.Parent = sg
     
-    -- Ð¡ÐºÑ€ÑƒÐ³Ð»Ñ‘Ð½Ð½Ñ‹Ðµ ÐºÑ€Ð°Ñ Ð¾ÑÐ½Ð¾Ð²Ð½Ð¾Ð³Ð¾ Ð¼ÐµÐ½ÑŽ
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
+    corner.CornerRadius = UDim.new(0, 10)
     corner.Parent = main
     
     local topbar = Instance.new("Frame")
     topbar.Name = "TopBar"
     topbar.Size = UDim2.new(1, 0, 0, 40)
     topbar.BackgroundColor3 = themes.DarkContrast
-    topbar.BorderSizePixel = 0
     topbar.Parent = main
     
     local topTitle = Instance.new("TextLabel")
@@ -689,130 +690,61 @@ function Library.new(title)
     topTitle.Font = Enum.Font.GothamBold
     topTitle.Text = title
     topTitle.TextColor3 = themes.Accent
-    topTitle.TextSize = 14
+    topTitle.TextSize = 15
     topTitle.TextXAlignment = Enum.TextXAlignment.Left
     topTitle.BackgroundTransparency = 1
     topTitle.Parent = topbar
-
-    ---------------------------------------------------------
-    -- 1. ÐŸÐ•Ð Ð•ÐœÐ•Ð©Ð•ÐÐ˜Ð• ÐœÐ•ÐÐ® (Drag TopBar)
-    ---------------------------------------------------------
-    local draggingMenu, dragStartMenu, startPosMenu, dragInputMenu
-    topbar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            draggingMenu = true
-            dragStartMenu = input.Position
-            startPosMenu = main.Position
-        end
-    end)
     
-    topbar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInputMenu = input
-        end
-    end)
-    
-    Services.UserInput.InputChanged:Connect(function(input)
-        if input == dragInputMenu and draggingMenu then
-            local delta = input.Position - dragStartMenu
-            main.Position = UDim2.new(startPosMenu.X.Scale, startPosMenu.X.Offset + delta.X, startPosMenu.Y.Scale, startPosMenu.Y.Offset + delta.Y)
-        end
-    end)
-    
-    Services.UserInput.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            draggingMenu = false
-        end
-    end)
-
-    ---------------------------------------------------------
-    -- 3. Ð˜Ð—ÐœÐ•ÐÐ•ÐÐ˜Ð• Ð ÐÐ—ÐœÐ•Ð Ð ÐœÐ•ÐÐ® (Resize Bottom-Right)
-    ---------------------------------------------------------
-    local resizeGrip = Instance.new("TextButton")
-    resizeGrip.Name = "ResizeGrip"
-    resizeGrip.Size = UDim2.new(0, 24, 0, 24)
-    resizeGrip.Position = UDim2.new(1, -24, 1, -24)
-    resizeGrip.BackgroundTransparency = 1
-    resizeGrip.Text = "â—¢"
-    resizeGrip.Font = Enum.Font.GothamBold
-    resizeGrip.TextSize = 14
-    resizeGrip.TextColor3 = themes.Accent
-    resizeGrip.ZIndex = 10
-    resizeGrip.Parent = main
-
-    local resizingMenu, resizeStartMenu, startSizeMenu
-    resizeGrip.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            resizingMenu = true
-            resizeStartMenu = input.Position
-            startSizeMenu = main.AbsoluteSize
-        end
-    end)
-
-    Services.UserInput.InputChanged:Connect(function(input)
-        if resizingMenu and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
-            local delta = input.Position - resizeStartMenu
-            local newWidth = math.max(280, startSizeMenu.X + delta.X)
-            local newHeight = math.max(180, startSizeMenu.Y + delta.Y)
-            main.Size = UDim2.new(0, newWidth, 0, newHeight)
-        end
-    end)
-
-    Services.UserInput.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            resizingMenu = false
-        end
-    end)
-    
-    -- ÐŸÐ»Ð°Ð²Ð°ÑŽÑ‰Ð°Ñ ÐºÐ½Ð¾Ð¿ÐºÐ° Ð¿ÐµÑ€ÐµÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ñ Ð²Ð¸Ð´Ð¸Ð¼Ð¾ÑÑ‚Ð¸
+    -- ÐŸÐ»Ð°Ð²Ð°ÑŽÑ‰Ð°Ñ ÐºÐ½Ð¾Ð¿ÐºÐ° Ð´Ð»Ñ Ð¼Ð¾Ð±Ð¸Ð»Ð¾Ðº
     local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Name = "UTeamz_ToggleButton"
-    toggleBtn.Size = UDim2.new(0, 70, 0, 35)
+    toggleBtn.Name = "CTSuteamz_ToggleButton"
+    toggleBtn.Size = UDim2.new(0, 75, 0, 35)
     toggleBtn.Position = UDim2.new(0.05, 0, 0.15, 0)
     toggleBtn.BackgroundColor3 = themes.Accent
-    toggleBtn.Text = "UTeamz"
+    toggleBtn.Text = "CTSuteamz"
     toggleBtn.Font = Enum.Font.GothamBold
-    toggleBtn.TextSize = 13
+    toggleBtn.TextSize = 12
     toggleBtn.TextColor3 = Color3.fromRGB(0,0,0)
     toggleBtn.Parent = sg
-    
+	
     local btnCorner = Instance.new("UICorner")
     btnCorner.CornerRadius = UDim.new(0, 8)
     btnCorner.Parent = toggleBtn
     
-    -- ÐŸÐµÑ€ÐµÐ¼ÐµÑ‰ÐµÐ½Ð¸Ðµ ÐºÐ½Ð¾Ð¿ÐºÐ¸ Ð¿ÐµÑ€ÐµÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ñ
-    local draggingBtn, dragStartBtn, startPosBtn, dragInputBtn
+    -- Ð”Ñ€Ð°Ð³ Ð¿Ð»Ð°Ð²Ð°ÑŽÑ‰ÐµÐ¹ ÐºÐ½Ð¾Ð¿ÐºÐ¸
+    local dragging, dragInput, dragStart, startPos
     toggleBtn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            draggingBtn = true
-            dragStartBtn = input.Position
-            startPosBtn = toggleBtn.Position
+            dragging = true
+            dragStart = input.Position
+            startPos = toggleBtn.Position
         end
     end)
     
     toggleBtn.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInputBtn = input
+            dragInput = input
         end
     end)
     
     Services.UserInput.InputChanged:Connect(function(input)
-        if input == dragInputBtn and draggingBtn then
-            local delta = input.Position - dragStartBtn
-            toggleBtn.Position = UDim2.new(startPosBtn.X.Scale, startPosBtn.X.Offset + delta.X, startPosBtn.Y.Scale, startPosBtn.Y.Offset + delta.Y)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            toggleBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
     
     Services.UserInput.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            draggingBtn = false
+            dragging = false
         end
     end)
     
     toggleBtn.MouseButton1Click:Connect(function()
         main.Visible = not main.Visible
     end)
-	local tabHolder = Instance.new("ScrollingFrame")
+    
+    local tabHolder = Instance.new("ScrollingFrame")
     tabHolder.Size = UDim2.new(0.28, 0, 1, -40)
     tabHolder.Position = UDim2.new(0, 0, 0, 40)
     tabHolder.BackgroundColor3 = themes.DarkContrast
@@ -851,7 +783,7 @@ function Library:AddTab(name)
     tabBtn.Parent = self.TabHolder
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0, 5)
     corner.Parent = tabBtn
     
     local pageScroll = Instance.new("ScrollingFrame")
@@ -934,7 +866,6 @@ function Library:AddTab(name)
             btn.Text = state and "ON" or "OFF"
             btn.TextColor3 = state and Color3.fromRGB(0,0,0) or themes.TextColor
             if callback then callback(state) end
-            SaveConfig()
         end)
 	end
 	
@@ -1005,10 +936,7 @@ function Library:AddTab(name)
         
         Services.UserInput.InputEnded:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-                if isSliding then
-                    isSliding = false
-                    SaveConfig()
-                end
+                isSliding = false
             end
         end)
     end
@@ -1038,7 +966,7 @@ end
 ---------------------------------------------------------
 -- UI INTERFACE BUILD
 ---------------------------------------------------------
-local win = Library.new("UTeamz | t.me/UTeamz")
+local win = Library.new("CTSuteamz | t.me/UTeamz")
 
 -- Ð¢Ð°Ð± 1: ESP
 local espTab = win:AddTab("ESP")
@@ -1097,34 +1025,18 @@ visTab:AddToggle("Remove Fog", Other.RemoveFog, function(v)
         end
     end
 end)
--- Ð¢Ð°Ð± 4: Fly
+
+-- Ð¢Ð°Ð± 4: Fly (ÐžÐ±Ð½Ð¾Ð²Ð»ÐµÐ½Ð¾)
 local flyTab = win:AddTab("Fly")
 flyTab:AddToggle("Enable Fly", Fly.Active, function(v)
     if v then startFly() else stopFly() end
 end)
 flyTab:AddSlider("Fly Speed", 10, 300, Fly.Speed, function(v) Fly.Speed = v end)
-flyTab:AddToggle("Move Up", false, function(v) Fly.MoveUp = v end)
-flyTab:AddToggle("Move Down", false, function(v) Fly.MoveDown = v end)
 
----------------------------------------------------------
--- 2. Ð’ÐšÐ¢ÐÐ”ÐšÐ ÐšÐžÐÐ¤Ð˜Ð“Ð£Ð ÐÐ¦Ð˜Ð˜ (Config)
----------------------------------------------------------
-local configTab = win:AddTab("Config")
-configTab:AddButton("Save Config (CTSUteamz)", function()
-    SaveConfig()
-end)
-configTab:AddButton("Load Config (CTSUteamz)", function()
-    if LoadConfig() then
-        UpdateAllESPInstances()
-    end
-end)
-
--- Ð¢Ð°Ð± 6: Info
+-- Ð¢Ð°Ð± 5: Info
 local infoTab = win:AddTab("Info")
 infoTab:AddButton("Copy Telegram Link", function()
     setclipboard("https://t.me/UTeamz")
 end)
 
--- Ð˜Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ ÑÐ¾ÑÑ‚Ð¾ÑÐ½Ð¸Ð¹ Ð¿Ð¾ÑÐ»Ðµ Ð²Ð¾Ð·Ð¼Ð¾Ð¶Ð½Ð¾Ð¹ Ð·Ð°Ð³Ñ€ÑƒÐ·ÐºÐ¸ ÐºÐ¾Ð½Ñ„Ð¸Ð³Ð°
-if Other.PenView then TogglePenView(true) end
 ScanVehicles()
