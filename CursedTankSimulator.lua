@@ -7,7 +7,8 @@ local Services = {
     Players = game:GetService("Players"),
     CoreGui = game:GetService("CoreGui"),
     Workspace = game:GetService("Workspace"),
-    Lighting = game:GetService("Lighting")
+    Lighting = game:GetService("Lighting"),
+    HttpService = game:GetService("HttpService")
 }
 
 local LocalPlayer = Services.Players.LocalPlayer
@@ -17,8 +18,8 @@ local Camera = Services.Workspace.CurrentCamera
 -- CONFIG & STATE
 ---------------------------------------------------------
 local ESP = {
-    Enabled = false,
-    TeamCheck = true,
+    Enabled = true,
+    TeamCheck = false,
     ShowDistance = true,
     EnableFill = true,
     EnableOutline = true,
@@ -72,6 +73,75 @@ local PenView = {
     }
 }
 
+---------------------------------------------------------
+-- CONFIG SYSTEM (CTSUteamz)
+---------------------------------------------------------
+local ConfigFileName = "CTSUteamz.json"
+
+local function SaveConfig()
+    local data = {
+        ESP = {
+            Enabled = ESP.Enabled,
+            TeamCheck = ESP.TeamCheck,
+            ShowDistance = ESP.ShowDistance,
+            EnableFill = ESP.EnableFill,
+            EnableOutline = ESP.EnableOutline
+        },
+        Mark = {
+            Enabled = Mark.Enabled,
+            Distance = Mark.Distance,
+            OffsetY = Mark.OffsetY,
+            Size = Mark.Size
+        },
+        Fly = {
+            Speed = Fly.Speed
+        },
+        Other = {
+            RemoveFog = Other.RemoveFog,
+            PenView = Other.PenView
+        }
+    }
+    if writefile then
+        pcall(function()
+            writefile(ConfigFileName, Services.HttpService:JSONEncode(data))
+        end)
+    end
+end
+
+local function LoadConfig()
+    if readfile and isfile and isfile(ConfigFileName) then
+        local success, result = pcall(function()
+            return Services.HttpService:JSONDecode(readfile(ConfigFileName))
+        end)
+        if success and type(result) == "table" then
+            if result.ESP then
+                if result.ESP.Enabled ~= nil then ESP.Enabled = result.ESP.Enabled end
+                if result.ESP.TeamCheck ~= nil then ESP.TeamCheck = result.ESP.TeamCheck end
+                if result.ESP.ShowDistance ~= nil then ESP.ShowDistance = result.ESP.ShowDistance end
+                if result.ESP.EnableFill ~= nil then ESP.EnableFill = result.ESP.EnableFill end
+                if result.ESP.EnableOutline ~= nil then ESP.EnableOutline = result.ESP.EnableOutline end
+            end
+            if result.Mark then
+                if result.Mark.Enabled ~= nil then Mark.Enabled = result.Mark.Enabled end
+                if result.Mark.Distance ~= nil then Mark.Distance = result.Mark.Distance end
+                if result.Mark.OffsetY ~= nil then Mark.OffsetY = result.Mark.OffsetY end
+                if result.Mark.Size ~= nil then Mark.Size = result.Mark.Size end
+            end
+            if result.Fly then
+                if result.Fly.Speed ~= nil then Fly.Speed = result.Fly.Speed end
+            end
+            if result.Other then
+                if result.Other.RemoveFog ~= nil then Other.RemoveFog = result.Other.RemoveFog end
+                if result.Other.PenView ~= nil then Other.PenView = result.Other.PenView end
+            end
+            return true
+        end
+    end
+    return false
+end
+
+-- ÐŸÑ€Ð¾Ð±ÑƒÐµÐ¼ Ð·Ð°Ð³Ñ€ÑƒÐ·Ð¸Ñ‚ÑŒ ÐºÐ¾Ð½Ñ„Ð¸Ð³ Ð¿Ñ€Ð¸ Ð·Ð°Ð¿ÑƒÑÐºÐµ
+LoadConfig()
 ---------------------------------------------------------
 -- FOLDERS & CONTAINERS
 ---------------------------------------------------------
@@ -200,7 +270,6 @@ local function PenView_UpdateViewport(ui, part, thickness, pen)
     end
     mesh.Color = color
 end
-
 local function PenView_StartHeartbeat(ui)
     if PenView.HeartbeatConnection then PenView.HeartbeatConnection:Disconnect() end
     PenView.LastPart = nil
@@ -323,7 +392,6 @@ local function stopFly()
     bv.Parent = nil
     bg.Parent = nil
 end
-
 ---------------------------------------------------------
 -- ESP & MARKERS
 ---------------------------------------------------------
@@ -438,7 +506,6 @@ local function CreateESP(targetObject, color, isHull)
     }
     return ESP.Instances[targetObject]
 end
-
 local function ProcessChassis(chassis)
     if not chassis:IsA("Model") or not chassis.Name:match("^Chassis") then return end
     local playerName = chassis.Name:match("^Chassis(.+)$")
@@ -571,9 +638,8 @@ Services.RunService.RenderStepped:Connect(function(dt)
         bg.CFrame = cam.CFrame
     end
 end)
-
 ---------------------------------------------------------
--- GREEN MOBILE UI LIBRARY
+-- ENHANCED GREEN MOBILE UI LIBRARY
 ---------------------------------------------------------
 local Library = {}
 Library.__index = Library
@@ -598,21 +664,23 @@ function Library.new(title)
     
     local main = Instance.new("Frame")
     main.Name = "Main"
-    main.Size = UDim2.new(0.85, 0, 0.75, 0)
-    main.Position = UDim2.new(0.075, 0, 0.125, 0)
+    main.Size = UDim2.new(0, 360, 0, 240)
+    main.Position = UDim2.new(0.5, -180, 0.5, -120)
     main.BackgroundColor3 = themes.Background
     main.BorderSizePixel = 0
     main.ClipsDescendants = true
     main.Parent = sg
     
+    -- Ð¡ÐºÑ€ÑƒÐ³Ð»Ñ‘Ð½Ð½Ñ‹Ðµ ÐºÑ€Ð°Ñ Ð¾ÑÐ½Ð¾Ð²Ð½Ð¾Ð³Ð¾ Ð¼ÐµÐ½ÑŽ
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
+    corner.CornerRadius = UDim.new(0, 12)
     corner.Parent = main
     
     local topbar = Instance.new("Frame")
     topbar.Name = "TopBar"
     topbar.Size = UDim2.new(1, 0, 0, 40)
     topbar.BackgroundColor3 = themes.DarkContrast
+    topbar.BorderSizePixel = 0
     topbar.Parent = main
     
     local topTitle = Instance.new("TextLabel")
@@ -621,12 +689,82 @@ function Library.new(title)
     topTitle.Font = Enum.Font.GothamBold
     topTitle.Text = title
     topTitle.TextColor3 = themes.Accent
-    topTitle.TextSize = 15
+    topTitle.TextSize = 14
     topTitle.TextXAlignment = Enum.TextXAlignment.Left
     topTitle.BackgroundTransparency = 1
     topTitle.Parent = topbar
+
+    ---------------------------------------------------------
+    -- 1. ÐŸÐ•Ð Ð•ÐœÐ•Ð©Ð•ÐÐ˜Ð• ÐœÐ•ÐÐ® (Drag TopBar)
+    ---------------------------------------------------------
+    local draggingMenu, dragStartMenu, startPosMenu, dragInputMenu
+    topbar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingMenu = true
+            dragStartMenu = input.Position
+            startPosMenu = main.Position
+        end
+    end)
     
-    -- ÐŸÐ»Ð°Ð²Ð°ÑŽÑ‰Ð°Ñ ÐºÐ½Ð¾Ð¿ÐºÐ° Ð´Ð»Ñ Ð¼Ð¾Ð±Ð¸Ð»Ð¾Ðº
+    topbar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInputMenu = input
+        end
+    end)
+    
+    Services.UserInput.InputChanged:Connect(function(input)
+        if input == dragInputMenu and draggingMenu then
+            local delta = input.Position - dragStartMenu
+            main.Position = UDim2.new(startPosMenu.X.Scale, startPosMenu.X.Offset + delta.X, startPosMenu.Y.Scale, startPosMenu.Y.Offset + delta.Y)
+        end
+    end)
+    
+    Services.UserInput.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingMenu = false
+        end
+    end)
+
+    ---------------------------------------------------------
+    -- 3. Ð˜Ð—ÐœÐ•ÐÐ•ÐÐ˜Ð• Ð ÐÐ—ÐœÐ•Ð Ð ÐœÐ•ÐÐ® (Resize Bottom-Right)
+    ---------------------------------------------------------
+    local resizeGrip = Instance.new("TextButton")
+    resizeGrip.Name = "ResizeGrip"
+    resizeGrip.Size = UDim2.new(0, 24, 0, 24)
+    resizeGrip.Position = UDim2.new(1, -24, 1, -24)
+    resizeGrip.BackgroundTransparency = 1
+    resizeGrip.Text = "â—¢"
+    resizeGrip.Font = Enum.Font.GothamBold
+    resizeGrip.TextSize = 14
+    resizeGrip.TextColor3 = themes.Accent
+    resizeGrip.ZIndex = 10
+    resizeGrip.Parent = main
+
+    local resizingMenu, resizeStartMenu, startSizeMenu
+    resizeGrip.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            resizingMenu = true
+            resizeStartMenu = input.Position
+            startSizeMenu = main.AbsoluteSize
+        end
+    end)
+
+    Services.UserInput.InputChanged:Connect(function(input)
+        if resizingMenu and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
+            local delta = input.Position - resizeStartMenu
+            local newWidth = math.max(280, startSizeMenu.X + delta.X)
+            local newHeight = math.max(180, startSizeMenu.Y + delta.Y)
+            main.Size = UDim2.new(0, newWidth, 0, newHeight)
+        end
+    end)
+
+    Services.UserInput.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            resizingMenu = false
+        end
+    end)
+    
+    -- ÐŸÐ»Ð°Ð²Ð°ÑŽÑ‰Ð°Ñ ÐºÐ½Ð¾Ð¿ÐºÐ° Ð¿ÐµÑ€ÐµÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ñ Ð²Ð¸Ð´Ð¸Ð¼Ð¾ÑÑ‚Ð¸
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Name = "UTeamz_ToggleButton"
     toggleBtn.Size = UDim2.new(0, 70, 0, 35)
@@ -642,40 +780,39 @@ function Library.new(title)
     btnCorner.CornerRadius = UDim.new(0, 8)
     btnCorner.Parent = toggleBtn
     
-    -- Ð”Ñ€Ð°Ð³ ÐºÐ½Ð¾Ð¿ÐºÐ¸
-    local dragging, dragInput, dragStart, startPos
+    -- ÐŸÐµÑ€ÐµÐ¼ÐµÑ‰ÐµÐ½Ð¸Ðµ ÐºÐ½Ð¾Ð¿ÐºÐ¸ Ð¿ÐµÑ€ÐµÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ñ
+    local draggingBtn, dragStartBtn, startPosBtn, dragInputBtn
     toggleBtn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = toggleBtn.Position
+            draggingBtn = true
+            dragStartBtn = input.Position
+            startPosBtn = toggleBtn.Position
         end
     end)
     
     toggleBtn.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInput = input
+            dragInputBtn = input
         end
     end)
     
     Services.UserInput.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            toggleBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        if input == dragInputBtn and draggingBtn then
+            local delta = input.Position - dragStartBtn
+            toggleBtn.Position = UDim2.new(startPosBtn.X.Scale, startPosBtn.X.Offset + delta.X, startPosBtn.Y.Scale, startPosBtn.Y.Offset + delta.Y)
         end
     end)
     
     Services.UserInput.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
+            draggingBtn = false
         end
     end)
     
     toggleBtn.MouseButton1Click:Connect(function()
         main.Visible = not main.Visible
     end)
-    
-    local tabHolder = Instance.new("ScrollingFrame")
+	local tabHolder = Instance.new("ScrollingFrame")
     tabHolder.Size = UDim2.new(0.28, 0, 1, -40)
     tabHolder.Position = UDim2.new(0, 0, 0, 40)
     tabHolder.BackgroundColor3 = themes.DarkContrast
@@ -700,8 +837,8 @@ function Library.new(title)
         PageHolder = pageHolder,
         Pages = {}
     }, Library)
-	
 end
+
 function Library:AddTab(name)
     local tabBtn = Instance.new("TextButton")
     tabBtn.Size = UDim2.new(1, -6, 0, 36)
@@ -714,7 +851,7 @@ function Library:AddTab(name)
     tabBtn.Parent = self.TabHolder
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 5)
+    corner.CornerRadius = UDim.new(0, 6)
     corner.Parent = tabBtn
     
     local pageScroll = Instance.new("ScrollingFrame")
@@ -797,9 +934,10 @@ function Library:AddTab(name)
             btn.Text = state and "ON" or "OFF"
             btn.TextColor3 = state and Color3.fromRGB(0,0,0) or themes.TextColor
             if callback then callback(state) end
+            SaveConfig()
         end)
-    end
-
+	end
+	
     function TabMethods:AddSlider(text, min, max, default, callback)
         local frame = Instance.new("Frame")
         frame.Size = UDim2.new(1, -6, 0, 50)
@@ -867,7 +1005,10 @@ function Library:AddTab(name)
         
         Services.UserInput.InputEnded:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-                isSliding = false
+                if isSliding then
+                    isSliding = false
+                    SaveConfig()
+                end
             end
         end)
     end
@@ -893,6 +1034,7 @@ function Library:AddTab(name)
 
     return TabMethods
 end
+
 ---------------------------------------------------------
 -- UI INTERFACE BUILD
 ---------------------------------------------------------
@@ -955,22 +1097,34 @@ visTab:AddToggle("Remove Fog", Other.RemoveFog, function(v)
         end
     end
 end)
-
 -- Ð¢Ð°Ð± 4: Fly
 local flyTab = win:AddTab("Fly")
 flyTab:AddToggle("Enable Fly", Fly.Active, function(v)
     if v then startFly() else stopFly() end
 end)
 flyTab:AddSlider("Fly Speed", 10, 300, Fly.Speed, function(v) Fly.Speed = v end)
-flyTab:AddButton("Fly Up (Hold)", function() end) -- Ð”Ð»Ñ ÑƒÐ´Ð¾Ð±ÑÑ‚Ð²Ð° ÑƒÐ¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ñ Ð²Ñ‹ÑÐ¾Ñ‚Ð¾Ð¹
 flyTab:AddToggle("Move Up", false, function(v) Fly.MoveUp = v end)
 flyTab:AddToggle("Move Down", false, function(v) Fly.MoveDown = v end)
 
--- Ð¢Ð°Ð± 5: Info
+---------------------------------------------------------
+-- 2. Ð’ÐšÐ¢ÐÐ”ÐšÐ ÐšÐžÐÐ¤Ð˜Ð“Ð£Ð ÐÐ¦Ð˜Ð˜ (Config)
+---------------------------------------------------------
+local configTab = win:AddTab("Config")
+configTab:AddButton("Save Config (CTSUteamz)", function()
+    SaveConfig()
+end)
+configTab:AddButton("Load Config (CTSUteamz)", function()
+    if LoadConfig() then
+        UpdateAllESPInstances()
+    end
+end)
+
+-- Ð¢Ð°Ð± 6: Info
 local infoTab = win:AddTab("Info")
 infoTab:AddButton("Copy Telegram Link", function()
     setclipboard("https://t.me/UTeamz")
 end)
 
+-- Ð˜Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ ÑÐ¾ÑÑ‚Ð¾ÑÐ½Ð¸Ð¹ Ð¿Ð¾ÑÐ»Ðµ Ð²Ð¾Ð·Ð¼Ð¾Ð¶Ð½Ð¾Ð¹ Ð·Ð°Ð³Ñ€ÑƒÐ·ÐºÐ¸ ÐºÐ¾Ð½Ñ„Ð¸Ð³Ð°
+if Other.PenView then TogglePenView(true) end
 ScanVehicles()
-print("[SUCCESS] UTeamz Mobile Script Loaded!")
