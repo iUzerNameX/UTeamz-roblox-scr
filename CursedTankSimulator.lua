@@ -626,8 +626,8 @@ Services.RunService.RenderStepped:Connect(function(dt)
     if Fly.Active and Fly.Root and Fly.Root.Parent then
         local cam = Services.Workspace.CurrentCamera
         local move = Vector3.zero
-        if Services.UserInput:IsKeyDown(Enum.KeyCode.W) then move += cam.CFrame.LookVector end
-        if Services.UserInput:IsKeyDown(Enum.KeyCode.S) then move -= cam.CFrame.LookVector end
+        if Fly.MoveFwd then move += cam.CFrame.LookVector end
+        if Fly.MoveBwd then move -= cam.CFrame.LookVector end
         if Services.UserInput:IsKeyDown(Enum.KeyCode.A) then move -= cam.CFrame.RightVector end
         if Services.UserInput:IsKeyDown(Enum.KeyCode.D) then move += cam.CFrame.RightVector end
         if Fly.MoveUp then move += Vector3.new(0,1,0) end
@@ -1097,6 +1097,8 @@ end)
 flyTab:AddSlider("Fly Speed", 10, 300, Fly.Speed, function(v) Fly.Speed = v end)
 flyTab:AddToggle("Move Up", false, function(v) Fly.MoveUp = v end)
 flyTab:AddToggle("Move Down", false, function(v) Fly.MoveDown = v end)
+flyTab:AddToggle("Move Forward", false, function(v) Fly.MoveFwd = v end)
+flyTab:AddToggle("Move Backsward", false, function(v) Fly.MoveBwd = v end)
 
 local configTab = win:AddTab("Config")
 configTab:AddButton("Save Config (CTSUteamz)", function()
