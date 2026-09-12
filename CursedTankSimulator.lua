@@ -17,8 +17,8 @@ local Camera = Services.Workspace.CurrentCamera
 -- CONFIG & STATE
 ---------------------------------------------------------
 local ESP = {
-    Enabled = true,
-    TeamCheck = false,
+    Enabled = false,
+    TeamCheck = true,
     ShowDistance = true,
     EnableFill = true,
     EnableOutline = true,
