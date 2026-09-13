@@ -635,8 +635,8 @@ Services.RunService.RenderStepped:Connect(function(dt)
     if Fly.Active and Fly.Root and Fly.Root.Parent then
         local cam = Services.Workspace.CurrentCamera
         local move = Vector3.zero
-        if Fly.MoveFwd then move += cam.CFrame.LookVector end
-        if Fly.MoveBwd then move -= cam.CFrame.LookVector end
+        if Services.UserInput:IsKeyDown(Enum.KeyCode.W) or Fly.MoveFwd then move += cam.CFrame.LookVector end
+        if Services.UserInput:IsKeyDown(Enum.KeyCode.S) or Fly.MoveBwd then move -= cam.CFrame.LookVector end
         if Services.UserInput:IsKeyDown(Enum.KeyCode.A) then move -= cam.CFrame.RightVector end
         if Services.UserInput:IsKeyDown(Enum.KeyCode.D) then move += cam.CFrame.RightVector end
         if Fly.MoveUp then move += Vector3.new(0,1,0) end
