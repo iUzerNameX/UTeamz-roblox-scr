@@ -1,4 +1,4 @@
--- [[ UTeamz | CTS ]] --
+-- [[ UTeamz Mobile Script | CTS ]] --
 print("UTeamz | t.me/UTeamz")
 
 local Services = {
@@ -81,7 +81,8 @@ local PenView = {
 }
 
 local UI_Elements = {}
-local win
+local LastSaveNotify = 0
+local win 
 
 ---------------------------------------------------------
 -- CONFIG SYSTEM (CTSUteamz)
@@ -117,7 +118,11 @@ function SaveConfig()
 		pcall(function()
 			writefile(ConfigFileName, Services.HttpService:JSONEncode(data))
 			if win and win.Notify then
-				win:Notify({Title = "Config", Content = "Config saved successfully!", Duration = 3})
+				local now = os.clock()
+				if now - LastSaveNotify >= 2.7 then
+					LastSaveNotify = now
+					win:Notify({Title = "Config", Content = "Config saved successfully!", Duration = 3})
+				end
 			end
 		end)
 	end
@@ -661,7 +666,25 @@ Services.RunService.RenderStepped:Connect(function(dt)
 		if Fly.MoveUp then move += Vector3.new(0,1,0) end
 		if Fly.MoveDown then move -= Vector3.new(0,1,0) end
 
-		bv.Velocity = move.Magnitude > 0 and move.Unit * Fly.Speed or Vector3.zero
+		local char = LocalPlayer.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		if hum then
+			if hum.SeatPart and hum.SeatPart:IsA("VehicleSeat") then
+				move += cam.CFrame.LookVector * hum.SeatPart.ThrottleFloat
+				move += cam.CFrame.RightVector * hum.SeatPart.SteerFloat
+			else
+				if hum.MoveDirection.Magnitude > 0 then
+					move += hum.MoveDirection
+				end
+			end
+		end
+
+		if move.Magnitude > 0 then
+			bv.Velocity = move.Unit * Fly.Speed
+		else
+			bv.Velocity = Vector3.zero
+		end
+
 		bg.CFrame = cam.CFrame
 	end
 end)
@@ -703,6 +726,7 @@ espTab:AddColorPicker("Turret Color", ESP.TurretColor, function(c)
 	ESP.TurretColor = c
 	UpdateAllESPInstances()
 end)
+
 
 local markTab = win:AddTab("Marks")
 UI_Elements.Mark_Enabled = markTab:AddToggle("Enable Mark", Mark.Enabled, function(v)
