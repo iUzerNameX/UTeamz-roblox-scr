@@ -132,7 +132,7 @@ if getgenv then getgenv().SaveConfig = SaveConfig else _G.SaveConfig = SaveConfi
 local function LoadConfig()
     if readfile and isfile and isfile(ConfigFileName) then
         local success, result = pcall(function()
-            return Services.HttpService:JSONEncode(readfile(ConfigFileName))
+            return Services.HttpService:JSONDecode(readfile(ConfigFileName))
         end)
         if success and type(result) == "table" then
             if result.ESP then
@@ -169,6 +169,19 @@ local function LoadConfig()
 end
 
 LoadConfig()
+
+---------------------------------------------------------
+-- HELPER FUNCTIONS FOR OTHER
+---------------------------------------------------------
+local function ToggleRemoveFog(state)
+    Other.RemoveFog = state
+    for _, child in ipairs(Services.Lighting:GetChildren()) do
+        if child:IsA("Atmosphere") then
+            child.Density = state and 0 or 0.3
+            child.Haze = state and 0 or 0.1
+        end
+    end
+end
 
 ---------------------------------------------------------
 -- FOLDERS & CONTAINERS
@@ -759,13 +772,7 @@ end)
 local visTab = win:AddTab("Visuals")
 UI_Elements.Other_PenView = visTab:AddToggle("Penetration View", Other.PenView, function(v) TogglePenView(v) end)
 UI_Elements.Other_RemoveFog = visTab:AddToggle("Remove Fog", Other.RemoveFog, function(v)
-    Other.RemoveFog = v
-    for _, child in ipairs(Services.Lighting:GetChildren()) do
-        if child:IsA("Atmosphere") then
-            child.Density = v and 0 or 0.3
-            child.Haze = v and 0 or 0.1
-        end
-    end
+    ToggleRemoveFog(v)
 end)
 
 local flyTab = win:AddTab("Fly")
@@ -802,6 +809,14 @@ bindsTab:AddKeybind("Toggle PenView", Enum.KeyCode.P, function()
     win:Notify({Title = "Keybind", Content = "PenView is now: " .. tostring(Other.PenView), Duration = 2})
 end)
 
+bindsTab:AddKeybind("Toggle Remove Fog", Enum.KeyCode.N, function()
+    ToggleRemoveFog(not Other.RemoveFog)
+    if UI_Elements.Other_RemoveFog and UI_Elements.Other_RemoveFog.Set then 
+        UI_Elements.Other_RemoveFog:Set(Other.RemoveFog, true) 
+    end
+    win:Notify({Title = "Keybind", Content = "Remove Fog is now: " .. tostring(Other.RemoveFog), Duration = 2})
+end)
+
 local configTab = win:AddTab("Config")
 configTab:AddButton("Save Config (CTSUteamz)", function()
     SaveConfig()
@@ -820,6 +835,7 @@ configTab:AddButton("Load Config (CTSUteamz)", function()
         
         UpdateAllESPInstances()
         TogglePenView(Other.PenView)
+        ToggleRemoveFog(Other.RemoveFog)
         SetFlyState(Fly.Active)
         
         win:Notify({Title = "Config", Content = "Config loaded and UI synced!", Duration = 3})
@@ -827,7 +843,6 @@ configTab:AddButton("Load Config (CTSUteamz)", function()
         win:Notify({Title = "Error", Content = "Failed to load config.", Duration = 3})
     end
 end)
-
 
 local infoTab = win:AddTab("Info")
 infoTab:AddButton("Copy Telegram Link", function()
@@ -838,4 +853,5 @@ infoTab:AddButton("Copy Telegram Link", function()
 end)
 
 if Other.PenView then TogglePenView(true) end
+if Other.RemoveFog then ToggleRemoveFog(true) end
 ScanVehicles()
